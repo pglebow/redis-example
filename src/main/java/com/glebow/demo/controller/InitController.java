@@ -5,17 +5,23 @@ package com.glebow.demo.controller;
 
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.glebow.demo.domain.ActIdentifier;
+import com.glebow.demo.domain.Identifier;
 import com.glebow.demo.domain.Item;
 import com.glebow.demo.domain.ItemIdentifierType;
+import com.glebow.demo.domain.ItemMasterIdentifier;
+import com.glebow.demo.repository.ACTIdentifierRepository;
+import com.glebow.demo.repository.ItemMasterRepository;
 import com.glebow.demo.repository.ItemRepository;
 
 import lombok.extern.slf4j.Slf4j;
@@ -30,9 +36,13 @@ import lombok.extern.slf4j.Slf4j;
 public class InitController {
 
     @Autowired
-    private ItemRepository repo; 
+    private ItemRepository itemRepo; 
     
-    private final static int NUM_RECORDS = 20000;
+    @Autowired
+    private ACTIdentifierRepository actRepo;
+    
+    @Autowired
+    private ItemMasterRepository itemMasterRepo;
     
     /**
      * Default 
@@ -42,30 +52,37 @@ public class InitController {
     
     
     @GetMapping
-    public void createDefaultData() {
-        Set<Item> items = new HashSet<>(NUM_RECORDS);
-        for (int i = 0; i < NUM_RECORDS; i++ ) {
+    @ResponseBody
+    public ResponseEntity<String> createDefaultData(@RequestParam("numItems") int numItems) {
+        ResponseEntity<String> retVal = null;
+        for (int i = 0; i < numItems; i++ ) {
             Item item = new Item();
             item.setName("Item_" + i);
             item.setDescription(item.getName());
             
-            Map<String, String> m = new HashMap<>();
-            m.put(ItemIdentifierType.ACT.toString(), "ACT_" + i);
-            m.put(ItemIdentifierType.CGI.toString(), "CGI_" + i);
-            m.put(ItemIdentifierType.EGI.toString(), "EGI_" + i);
-            m.put(ItemIdentifierType.ITEM_MASTER.toString(), "ITEM_MASTER_" + i);
-            m.put(ItemIdentifierType.PFI.toString(), "PFI_" + i);
-            m.put(ItemIdentifierType.RETAIL_STYLE.toString(), "RETAIL_STYLE_" + i);
-
-            item.setIdentifiers(m);
+            //item.setIdentifiers(m);
             item.setLastModified(new Date());
             
-            items.add(item);
+            item = itemRepo.save(item);
+
+            ActIdentifier actId = new ActIdentifier();
+            actId.setIdentifier("ACT_" + i);
+            actId.setItem(item);
+            
+            actId = actRepo.save(actId);
+            
+            ItemMasterIdentifier itemMasterId = new ItemMasterIdentifier();
+            itemMasterId.setIdentifier("ITEM_MASTER_" + i);
+            itemMasterId.setItem(item);
+            
+            itemMasterId = itemMasterRepo.save(itemMasterId);
+            
+            log.info("Saved item " + item.getId() + " and associated it with ACT ID " + actId.getId());
         }
         
-        log.info("Starting save of " + items.size() + " items");
-        repo.save(items);
-        log.info("Finished save of " + items.size() + " items");
+        retVal = ResponseEntity.ok("Created " + numItems + " records");
+        
+        return retVal;
     }
 
 }

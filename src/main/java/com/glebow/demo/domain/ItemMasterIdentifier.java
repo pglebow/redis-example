@@ -3,8 +3,6 @@
  */
 package com.glebow.demo.domain;
 
-import java.util.Date;
-
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 import org.springframework.data.redis.core.index.Indexed;
@@ -16,20 +14,17 @@ import lombok.NoArgsConstructor;
  * @author pglebow
  *
  */
-@RedisHash("items")
+@RedisHash("itemMasterIdentifiers")
 @Data
 @NoArgsConstructor
-public class Item implements Identifier {
+public class ItemMasterIdentifier implements Identifier {
 
     @Id
     private String id;
 
     @Indexed
-    private String name;
+    private String identifier;
 
     @Indexed
-    private String description;
-
-    @Indexed
-    private Date lastModified;
+    private Item item;
 }
